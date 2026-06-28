@@ -1,0 +1,82 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "https://maven.minecraftforge.net/"
+        }
+    }
+    dependencies {
+        classpath ('com.anatawa12.forge:ForgeGradle:1.2-1.1.+') {
+            changing = true
+        }
+    }
+}
+
+apply plugin: 'forge'
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
+version = "9.2"
+group= "whiterose.beenbt" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "BeeAnalyzerMod"
+
+minecraft {
+    version = "1.7.10-10.13.4.1614-1.7.10"
+    runDir = "run"
+}
+
+configurations {
+     compile.extendsFrom bundle
+}
+
+dependencies {
+    //bundle fileTree(dir: "libs", includes: ["*.jar"])
+
+    // Compile against the Forestry API only (forestry.api.*). The jar is NOT bundled
+    // into the output (the jar task only packages this project's classes + resources);
+    // at runtime Forestry itself provides these classes.
+    compile files("libs/Forestry-4.11.26.jar")
+
+    // ChromaticTooltips: compiled against by the MixinCTTooltipHandler mixin, which hides the
+    // normal tooltip for our genome items. Not bundled; the mixin only applies at runtime when
+    // CT is present (Loader.isModLoaded check in the Mixins enum).
+    compile files("libs/chromatictooltips-1.0.18.jar")
+
+    // UniMixins: Mixin runtime + gtnhmixins late-mixin API, used to fully hide the
+    // ChromaticTooltips tooltip for our items. Compile-only; provided by the pack at runtime.
+    compile files("libs/unimixins-all-1.7.10-0.1.23.jar")
+    }
+
+/*jar {
+    // merge dependency jars
+    from {
+        configurations.bundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    // FIX: Exclude mcmod.info and other mod metadata from dependencies
+    exclude("META-INF/MANIFEST.MF")
+    exclude("mcmod.info")
+    exclude("META-INF/*.SF")
+    exclude("META-INF/*.DSA")
+    exclude("META-INF/*.RSA")
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}*/
+
+
+// FIX: Streamlined resource processing to prevent mcmod.info duplication.
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+                "version": project.version,
+                "mcversion": project.minecraft.version
+        ])
+    }
+}

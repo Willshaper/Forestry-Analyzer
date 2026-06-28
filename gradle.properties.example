@@ -1,0 +1,7 @@
+## Copy this file to gradle.properties and adjust the path.
+##
+## This project uses anatawa12's ForgeGradle 1.2, which requires JDK 8 to build.
+## If your default JDK is newer, pin Gradle to a JDK 8 install here.
+## Use forward slashes (even on Windows) to avoid escaping backslashes.
+
+org.gradle.java.home=C:/path/to/your/jdk8

@@ -1,0 +1,5 @@
+key.categories.beenbtviewer=Bee NBT Viewer
+key.beenbtviewer.copy=Copy NBT to Clipboard
+key.beenbtviewer.toggle_raw=Toggle Trait Display
+key.beenbtviewer.toggle_mutations=Toggle Mutation Hints
+key.beenbtviewer.show_panel=Show Genome Panel (hold)

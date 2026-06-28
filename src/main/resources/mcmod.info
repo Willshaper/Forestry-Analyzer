@@ -1,0 +1,16 @@
+[
+{
+  "modid": "beenbtviewer",
+  "name": "Forestry Beealyzer as a Tooltip",
+  "description": "Beealyzer but as a GL11 tooltip without needing to use the item, speeds up the analyzing process by 420.69ms. Shows bee and tree genomes, a pure-bred badge, and breeding mutations. Works over NEI's item panel too. Configurable.",
+  "version": "9.2",
+  "mcversion": "1.7.10",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Whiterose"],
+  "credits": "The GTNH guys for making the game so fucking hard",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

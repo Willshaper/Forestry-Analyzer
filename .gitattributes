@@ -1,0 +1,9 @@
+# Normalize line endings: store LF in the repo; Git handles checkout per-platform.
+* text=auto
+
+# Keep platform-correct endings for the Gradle wrapper scripts.
+gradlew      text eol=lf
+*.bat        text eol=crlf
+
+# Treat jars as binary.
+*.jar        binary

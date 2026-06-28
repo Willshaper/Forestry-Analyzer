@@ -1,0 +1,32 @@
+# Build output
+/build/
+/bin/
+/out/
+
+# Gradle
+/.gradle/
+
+# ForgeGradle decompiled workspace / run dir
+/run/
+/eclipse/
+
+# IDE
+/.idea/
+*.iml
+*.ipr
+*.iws
+/.settings/
+/.classpath
+/.project
+/.vscode/
+
+# Machine-specific Gradle config (pins the local JDK 8 path).
+# Copy gradle.properties.example to gradle.properties and edit it. See README.
+/gradle.properties
+
+# Third-party dependency jars are not redistributed here. See libs/README.md.
+/libs/*.jar
+
+# OS cruft
+.DS_Store
+Thumbs.db
