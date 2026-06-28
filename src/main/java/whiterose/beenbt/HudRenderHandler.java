@@ -71,7 +71,7 @@ import forestry.api.genetics.ISpeciesRoot;
  * This is effectively a client-only mod (it renders GUIs and registers
  * keybindings); it is intended to be installed client-side.
  */
-@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.2",
+@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.3",
         dependencies = "required-after:Forestry;after:NotEnoughItems;after:chromatictooltips", useMetadata = true)
 public class HudRenderHandler {
     public static final String MODID = "beenbtviewer";
@@ -259,7 +259,7 @@ public class HudRenderHandler {
         private static final String ACTIVE_TITLE = EnumChatFormatting.GRAY + "Active";
         private static final String INACTIVE_TITLE = EnumChatFormatting.GRAY + "Inactive";
 
-        // ARGB colors — defaults match the in-game tooltip resource pack; overridable via config.
+        // ARGB colors. Defaults match the in-game tooltip resource pack; overridable via config.
         static int COLOR_MATCH_GREEN = 0xFF7FD97F;
         static int COLOR_MISMATCH_RED = 0xFFFF5A5A;
         static int COLOR_BACKGROUND = 0xCC202020;
@@ -267,8 +267,8 @@ public class HudRenderHandler {
         static int BORDER_COLOR = 0xE63A4A5A;   // all four edges
         static int HR_COLOR = 0xF26A7F99;       // internal divider lines (faded at the edges)
         private static final int LABEL_GRAY = 0xFFB0B0B0;       // mutation conditions / "+N more"
-        private static final int BREEDS_INTO_COLOR = 0xFF7FE6F0; // aqua  — "Breeds into" section
-        private static final int MADE_FROM_COLOR = 0xFFD6B84A;   // gold  — "Made from" section
+        private static final int BREEDS_INTO_COLOR = 0xFF7FE6F0; // aqua: "Breeds into" section
+        private static final int MADE_FROM_COLOR = 0xFFD6B84A;   // gold: "Made from" section
 
         // Display config (loaded from file at preInit).
         static boolean alwaysShow = false;
@@ -519,7 +519,7 @@ public class HudRenderHandler {
                     y += LINE_HEIGHT;
                 }
 
-                // Status lines (pure-bred badge) — grouped with the genome, above the mutation divider.
+                // Status lines (pure-bred badge), grouped with the genome, above the mutation divider.
                 if (!data.statusLines.isEmpty()) {
                     y += STATUS_GAP;
                     for (ExtraLine e : data.statusLines) {
@@ -529,7 +529,7 @@ public class HudRenderHandler {
                     }
                 }
 
-                // Mutation block — own faded divider then the lines.
+                // Mutation block: own faded divider then the lines.
                 if (!data.mutationLines.isEmpty()) {
                     y += 2;
                     drawFadeDivider(2, panelWidth - 2, y, HR_COLOR);
@@ -1049,7 +1049,7 @@ public class HudRenderHandler {
                     getStackMouseOver = cls.getMethod("getStackMouseOver", GuiContainer.class);
                     logger.info("[Forestry Genome Tooltip] NEI detected; item-panel support enabled.");
                 } catch (Throwable t) {
-                    getStackMouseOver = null; // NEI absent or incompatible — silently disabled.
+                    getStackMouseOver = null; // NEI absent or incompatible; silently disabled.
                 }
             }
             if (getStackMouseOver == null) {
