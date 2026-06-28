@@ -15,5 +15,4 @@ built against; newer compatible versions usually work too.
 At runtime only Forestry is required. ChromaticTooltips and UniMixins are optional; the
 tooltip-hiding mixin applies only when ChromaticTooltips is present.
 
-The easiest way to get matching jars is to copy them out of your GT New Horizons instance's
-`mods/` folder.
+Download each jar from its release page linked in the table above.
