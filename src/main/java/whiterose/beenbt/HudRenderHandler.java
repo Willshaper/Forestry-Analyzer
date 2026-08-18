@@ -71,7 +71,7 @@ import forestry.api.genetics.ISpeciesRoot;
  * This is effectively a client-only mod (it renders GUIs and registers
  * keybindings); it is intended to be installed client-side.
  */
-@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.3",
+@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.6",
         dependencies = "required-after:Forestry;after:NotEnoughItems;after:chromatictooltips", useMetadata = true)
 public class HudRenderHandler {
     public static final String MODID = "beenbtviewer";
@@ -252,7 +252,7 @@ public class HudRenderHandler {
 
         private static final String[] TRAIT_CATEGORIES_DISPLAY = new String[]{
                 "Species", "Lifespan", "Speed", "Pollination", "Flowers", "Fertility",
-                "Area", "Effect", "Temperature", "Humidity", "Nocturnal", "Tolerant Flyer", "Cave Dwelling"
+                "Area", "Effect", "Temp", "Humidity", "Nocturnal", "Tolerant Flyer", "Cave Dwelling"
         };
 
         private static final String CATEGORY_TITLE = EnumChatFormatting.GRAY + "Trait";
@@ -284,6 +284,7 @@ public class HudRenderHandler {
 
         private static final int COL_PADDING = 12;
         private static final int LINE_HEIGHT = 10;
+        private static final int NOTE_GAP = 4;      // gap between a row label and its "(Hot)" climate note
         private static final int SIDE_PADDING = 4;
         private static final int TOP_PADDING = 4;
         private static final int BOTTOM_MARGIN = 3;
@@ -410,12 +411,17 @@ public class HudRenderHandler {
 
             FontRenderer font = mc.fontRenderer;
 
-            // Column widths (genome table).
+            // Column widths (genome table). A climate note like "(Hot)" sits right after its own
+            // label, so that row's label column needs room for label + gap + "(name)".
             int col1W = font.getStringWidth(CATEGORY_TITLE);
             int col2W = font.getStringWidth(ACTIVE_TITLE);
             int col3W = font.getStringWidth(INACTIVE_TITLE);
             for (TraitRow trait : data.rows) {
-                col1W = Math.max(col1W, font.getStringWidth(trait.category));
+                int labelW = font.getStringWidth(trait.category);
+                if (trait.note != null) {
+                    labelW += NOTE_GAP + font.getStringWidth("(" + trait.note + ")");
+                }
+                col1W = Math.max(col1W, labelW);
                 col2W = Math.max(col2W, font.getStringWidth(trait.active));
                 col3W = Math.max(col3W, font.getStringWidth(trait.inactive));
             }
@@ -514,6 +520,15 @@ public class HudRenderHandler {
                 for (TraitRow trait : data.rows) {
                     int traitColor = trait.isHeterozygous ? COLOR_MISMATCH_RED : COLOR_MATCH_GREEN;
                     font.drawString(trait.category, SIDE_PADDING, y, COLOR_TEXT_WHITE, false);
+                    if (trait.note != null) {
+                        // Climate note right after the label: white parens, green name inside.
+                        int nx = SIDE_PADDING + font.getStringWidth(trait.category) + NOTE_GAP;
+                        font.drawString("(", nx, y, COLOR_TEXT_WHITE, false);
+                        nx += font.getStringWidth("(");
+                        font.drawString(trait.note, nx, y, COLOR_MATCH_GREEN, false);
+                        nx += font.getStringWidth(trait.note);
+                        font.drawString(")", nx, y, COLOR_TEXT_WHITE, false);
+                    }
                     font.drawString(trait.active, col2X, y, traitColor, false);
                     font.drawString(trait.inactive, col3X, y, traitColor, false);
                     y += LINE_HEIGHT;
@@ -917,6 +932,13 @@ public class HudRenderHandler {
 
         private List<TraitRow> getBeeTraitData(IBee bee) {
             IGenome g = bee.getGenome();
+            // Species-preferred climate (phenotype from the primary species allele), shown as a gray
+            // "(Hot)"/"(Arid)" note on the Temp/Humidity rows, like Forestry's analyzed-bee tooltip.
+            // EnumTemperature/EnumHumidity.getName() already return display strings ("Hot", "Arid").
+            IAlleleSpecies species = g.getPrimary();
+            String prefTemp = (species != null && species.getTemperature() != null) ? species.getTemperature().getName() : "";
+            String prefHumid = (species != null && species.getHumidity() != null) ? species.getHumidity().getName() : "";
+
             List<TraitRow> traits = new ArrayList<TraitRow>();
             int displayIndex = 0;
             for (int nbtIndex : DISPLAY_ORDER_INDICES) {
@@ -941,7 +963,13 @@ public class HudRenderHandler {
                     String label = displayIndex < TRAIT_CATEGORIES_DISPLAY.length
                             ? TRAIT_CATEGORIES_DISPLAY[displayIndex]
                             : chromosome.toString();
-                    traits.add(new TraitRow(label, activeTrait, inactiveTrait, heterozygous(active, inactive)));
+                    String note = null;
+                    if (chromosome == EnumBeeChromosome.TEMPERATURE_TOLERANCE && !prefTemp.isEmpty()) {
+                        note = prefTemp;
+                    } else if (chromosome == EnumBeeChromosome.HUMIDITY_TOLERANCE && !prefHumid.isEmpty()) {
+                        note = prefHumid;
+                    }
+                    traits.add(new TraitRow(label, activeTrait, inactiveTrait, heterozygous(active, inactive), note));
                 }
                 ++displayIndex;
             }
@@ -1069,12 +1097,20 @@ public class HudRenderHandler {
         public final String active;
         public final String inactive;
         public final boolean isHeterozygous;
+        // Optional climate name drawn in parens right after the label (e.g. "Hot" on the Temp row,
+        // rendered as "(Hot)"). null for rows without one.
+        public final String note;
 
         public TraitRow(String category, String active, String inactive, boolean heterozygous) {
+            this(category, active, inactive, heterozygous, null);
+        }
+
+        public TraitRow(String category, String active, String inactive, boolean heterozygous, String note) {
             this.category = category;
             this.active = active;
             this.inactive = inactive;
             this.isHeterozygous = heterozygous;
+            this.note = note;
         }
     }
 

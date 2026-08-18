@@ -11,6 +11,8 @@ green, hybrid (heterozygous) ones show red.
 
 - Bee and tree genomes in a three-column table (Trait / Active / Inactive). Row order and labels
   follow Forestry's own analyzers.
+- For bees, the Temp and Humidity rows also show the species' preferred climate in parentheses
+  (`Temp (Hot)`, `Humidity (Arid)`), like the analyzed Beealyzer.
 - A "PURE-BRED" badge when every chromosome is homozygous.
 - Breeding mutations in both directions, color-coded. "Breeds into" (aqua) lists what this
   species can produce; "Made from" (gold) lists what produces it. Each line shows the breeding
