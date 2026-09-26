@@ -44,6 +44,7 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 
 import forestry.api.apiculture.BeeManager;
 import forestry.api.apiculture.EnumBeeChromosome;
+import forestry.api.apiculture.EnumBeeType;
 import forestry.api.apiculture.IBee;
 import forestry.api.arboriculture.EnumTreeChromosome;
 import forestry.api.arboriculture.IAlleleFruit;
@@ -71,7 +72,7 @@ import forestry.api.genetics.ISpeciesRoot;
  * This is effectively a client-only mod (it renders GUIs and registers
  * keybindings); it is intended to be installed client-side.
  */
-@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.6",
+@Mod(modid = HudRenderHandler.MODID, name = "Forestry Beealyzer as a Tooltip", version = "9.9",
         dependencies = "required-after:Forestry;after:NotEnoughItems;after:chromatictooltips", useMetadata = true)
 public class HudRenderHandler {
     public static final String MODID = "beenbtviewer";
@@ -82,6 +83,9 @@ public class HudRenderHandler {
     public static KeyBinding keyToggleRawNBT;
     public static KeyBinding keyToggleMutations;
     public static KeyBinding keyShowPanel; // hold-to-show (default Alt), rebindable in Controls
+
+    // Kept from preInit so runtime toggles (Mutation Hints) can be written back and survive restarts.
+    private static Configuration config;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -126,7 +130,7 @@ public class HudRenderHandler {
 
     /** Loads the Forge config and applies it to the render settings. */
     private static void loadConfig(File file) {
-        Configuration config = new Configuration(file);
+        config = new Configuration(file);
         try {
             config.load();
 
@@ -153,7 +157,7 @@ public class HudRenderHandler {
             ClientEvents.hideNormalTooltip = config.getBoolean("hideNormalTooltip", DISPLAY, true,
                     "Hide the normal item tooltip while the genome panel is showing (needs ChromaticTooltips for full effect).");
             ClientEvents.showPureBadge = config.getBoolean("showPureBadge", DISPLAY, true,
-                    "Show a 'PURE-BRED' badge when every chromosome is homozygous.");
+                    "Show a pure-bred icon (green diamond) after the Trait header when every chromosome is homozygous.");
             ClientEvents.showMutations = config.getBoolean("showMutations", DISPLAY, true,
                     "Show breeding mutations. Also toggleable in-game with the Toggle Mutation Hints key.");
             ClientEvents.maxMutations = config.getInt("maxMutations", DISPLAY, 6, 1, 50,
@@ -179,6 +183,21 @@ public class HudRenderHandler {
             if (config.hasChanged()) {
                 config.save();
             }
+        }
+    }
+
+    /** Writes the Mutation Hints toggle back to the config file so it survives a restart. */
+    static void persistShowMutations(boolean value) {
+        if (config == null) {
+            return;
+        }
+        try {
+            config.get("display", "showMutations", true).set(value);
+            if (config.hasChanged()) {
+                config.save();
+            }
+        } catch (Exception e) {
+            logger.error("[Forestry Genome Tooltip] Failed to save the Mutation Hints setting.", e);
         }
     }
 
@@ -269,6 +288,19 @@ public class HudRenderHandler {
         private static final int LABEL_GRAY = 0xFFB0B0B0;       // mutation conditions / "+N more"
         private static final int BREEDS_INTO_COLOR = 0xFF7FE6F0; // aqua: "Breeds into" section
         private static final int MADE_FROM_COLOR = 0xFFD6B84A;   // gold: "Made from" section
+
+        // Header icons drawn after the "Trait" title:
+        //  - a six-pointed star for princess/queen stock (gold = pristine, gray = ignoble),
+        //  - then a green diamond when the individual is pure-bred (nothing when hybrid).
+        static final int STOCK_NONE = 0;
+        static final int STOCK_PRISTINE = 1;
+        static final int STOCK_IGNOBLE = 2;
+        private static final int PRISTINE_COLOR = 0xFFFFD24A;    // gold = pristine (isNatural)
+        private static final int IGNOBLE_COLOR = 0xFF8A8A8A;     // gray = ignoble
+        private static final float STAR_RADIUS = 4.0f;           // stock six-pointed star outer radius (px)
+        private static final float PURE_HALF = 3.5f;             // pure-bred diamond half-size (px)
+        private static final int HEADER_ICON_GAP = 4;            // gap after "Trait" before the first icon
+        private static final int ICON_SPACING = 3;               // gap between the star and the pure diamond
 
         // Display config (loaded from file at preInit).
         static boolean alwaysShow = false;
@@ -513,6 +545,17 @@ public class HudRenderHandler {
                 font.drawString(CATEGORY_TITLE, SIDE_PADDING, y, COLOR_TEXT_WHITE, false);
                 font.drawString(ACTIVE_TITLE, col2X, y, COLOR_TEXT_WHITE, false);
                 font.drawString(INACTIVE_TITLE, col3X, y, COLOR_TEXT_WHITE, false);
+                // Header icons after "Trait": stock star (princess/queen), then a pure-bred diamond.
+                float iconX = SIDE_PADDING + font.getStringWidth(CATEGORY_TITLE) + HEADER_ICON_GAP;
+                float iconCy = y + 3.5f;
+                if (data.stock != STOCK_NONE) {
+                    int starColor = data.stock == STOCK_PRISTINE ? PRISTINE_COLOR : IGNOBLE_COLOR;
+                    drawHexStar(iconX + STAR_RADIUS, iconCy, STAR_RADIUS, starColor);
+                    iconX += 2 * STAR_RADIUS + ICON_SPACING;
+                }
+                if (data.pure) {
+                    drawDiamond(iconX + PURE_HALF, iconCy, PURE_HALF, COLOR_MATCH_GREEN);
+                }
                 y += LINE_HEIGHT;
                 drawFadeDivider(2, panelWidth - 2, y - 1, HR_COLOR);
 
@@ -589,6 +632,57 @@ public class HudRenderHandler {
             GL11.glColor4f(r, g, b, 0.0f);
             GL11.glVertex2f(x2, y + 1);
             GL11.glVertex2f(x2, y);
+            GL11.glEnd();
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        /** A small filled six-pointed star (hexagram) centered at (cx, cy), from two overlapping
+         *  triangles. r is the center-to-point radius. Color should be opaque (0xFF alpha). */
+        private void drawHexStar(float cx, float cy, float r, int color) {
+            float a = ((color >> 24) & 0xFF) / 255.0f;
+            float red = ((color >> 16) & 0xFF) / 255.0f;
+            float grn = ((color >> 8) & 0xFF) / 255.0f;
+            float blu = (color & 0xFF) / 255.0f;
+            float dx = r * 0.8660254f; // r * sin(60)
+            float dy = r * 0.5f;       // r * cos(60)
+
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glShadeModel(GL11.GL_FLAT);
+            GL11.glColor4f(red, grn, blu, a);
+            GL11.glBegin(GL11.GL_TRIANGLES);
+            // upward triangle
+            GL11.glVertex2f(cx, cy - r);
+            GL11.glVertex2f(cx - dx, cy + dy);
+            GL11.glVertex2f(cx + dx, cy + dy);
+            // downward triangle
+            GL11.glVertex2f(cx, cy + r);
+            GL11.glVertex2f(cx + dx, cy - dy);
+            GL11.glVertex2f(cx - dx, cy - dy);
+            GL11.glEnd();
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        /** A small filled diamond centered at (cx, cy), with the given half-size and ARGB color. */
+        private void drawDiamond(float cx, float cy, float half, int color) {
+            float a = ((color >> 24) & 0xFF) / 255.0f;
+            float r = ((color >> 16) & 0xFF) / 255.0f;
+            float g = ((color >> 8) & 0xFF) / 255.0f;
+            float b = (color & 0xFF) / 255.0f;
+
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glShadeModel(GL11.GL_FLAT);
+            GL11.glColor4f(r, g, b, a);
+            GL11.glBegin(GL11.GL_QUADS);
+            GL11.glVertex2f(cx, cy - half);   // top
+            GL11.glVertex2f(cx + half, cy);   // right
+            GL11.glVertex2f(cx, cy + half);   // bottom
+            GL11.glVertex2f(cx - half, cy);   // left
             GL11.glEnd();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -685,6 +779,7 @@ public class HudRenderHandler {
             showMutations = !showMutations;
             cachedStack = null; // force the panel to rebuild with/without mutations
             cachedPanel = null;
+            persistShowMutations(showMutations); // remember the choice across restarts
             if (mc.thePlayer != null) {
                 String state = showMutations ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF";
                 mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "Mutation Hints: " + state));
@@ -804,17 +899,34 @@ public class HudRenderHandler {
                 }
             }
 
+            // The pure-bred badge is now a small header diamond (see renderPanel), not a bottom line.
             List<ExtraLine> status = new ArrayList<ExtraLine>();
-            if (showPureBadge && pure) {
-                status.add(new ExtraLine("PURE-BRED", COLOR_MATCH_GREEN, true));
-            }
 
             List<ExtraLine> mutations = new ArrayList<ExtraLine>();
             if (showMutations) {
                 this.addMutationLines(mutations, root, individual.getGenome().getPrimary());
             }
 
-            return new PanelData(visible, status, mutations);
+            return new PanelData(visible, status, mutations, beeStock(root, individual, stack), showPureBadge && pure);
+        }
+
+        /**
+         * Princess/queen "stock" for the header diamond: PRISTINE if {@link IBee#isNatural()}, else
+         * IGNOBLE. Drones and non-bees have no stock (Forestry only labels non-drones), so NONE.
+         */
+        private int beeStock(ISpeciesRoot root, IIndividual individual, ItemStack stack) {
+            if (BeeManager.beeRoot == null || root != BeeManager.beeRoot || !(individual instanceof IBee)) {
+                return STOCK_NONE;
+            }
+            try {
+                EnumBeeType type = BeeManager.beeRoot.getType(stack);
+                if (type == EnumBeeType.DRONE || type == EnumBeeType.NONE) {
+                    return STOCK_NONE;
+                }
+                return ((IBee) individual).isNatural() ? STOCK_PRISTINE : STOCK_IGNOBLE;
+            } catch (Throwable t) {
+                return STOCK_NONE;
+            }
         }
 
         private void addMutationLines(List<ExtraLine> mutationLines, ISpeciesRoot root, IAlleleSpecies species) {
@@ -1132,11 +1244,19 @@ public class HudRenderHandler {
         public final List<TraitRow> rows;
         public final List<ExtraLine> statusLines;   // pure-bred badge etc. (grouped with the genome)
         public final List<ExtraLine> mutationLines;  // breeding mutations (below their own divider)
+        public final int stock;                      // STOCK_NONE / STOCK_PRISTINE / STOCK_IGNOBLE
+        public final boolean pure;                    // draw the pure-bred header diamond
 
         public PanelData(List<TraitRow> rows, List<ExtraLine> statusLines, List<ExtraLine> mutationLines) {
+            this(rows, statusLines, mutationLines, ClientEvents.STOCK_NONE, false);
+        }
+
+        public PanelData(List<TraitRow> rows, List<ExtraLine> statusLines, List<ExtraLine> mutationLines, int stock, boolean pure) {
             this.rows = rows;
             this.statusLines = statusLines;
             this.mutationLines = mutationLines;
+            this.stock = stock;
+            this.pure = pure;
         }
     }
 }

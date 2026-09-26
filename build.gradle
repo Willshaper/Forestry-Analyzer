@@ -18,7 +18,7 @@ apply plugin: 'forge'
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
 
-version = "9.6"
+version = "9.9"
 group= "whiterose.beenbt" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "BeeAnalyzerMod"
 

@@ -13,7 +13,9 @@ green, hybrid (heterozygous) ones show red.
   follow Forestry's own analyzers.
 - For bees, the Temp and Humidity rows also show the species' preferred climate in parentheses
   (`Temp (Hot)`, `Humidity (Arid)`), like the analyzed Beealyzer.
-- A "PURE-BRED" badge when every chromosome is homozygous.
+- Header icons after `Trait`: a six-pointed star for a princess's or queen's stock (gold for
+  pristine, gray for ignoble), and a green diamond when the bee is pure-bred (every chromosome
+  homozygous).
 - Breeding mutations in both directions, color-coded. "Breeds into" (aqua) lists what this
   species can produce; "Made from" (gold) lists what produces it. Each line shows the breeding
   chance and any special requirement, such as "Requires &lt;block&gt; as a foundation".
