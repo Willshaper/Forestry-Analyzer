@@ -36,7 +36,8 @@ Every key is rebindable under Options, Controls, "Bee NBT Viewer":
 | Toggle mutation hints | M |
 | Copy raw NBT | N |
 
-To skip the show key, set `display.alwaysShow = true`.
+To skip the show key, set `display.alwaysShow = true`. The mutation-hints toggle (M) is
+remembered across restarts.
 
 ## Configuration
 

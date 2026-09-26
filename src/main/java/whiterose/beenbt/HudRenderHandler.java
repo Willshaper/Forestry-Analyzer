@@ -77,12 +77,12 @@ import forestry.api.genetics.ISpeciesRoot;
 public class HudRenderHandler {
     public static final String MODID = "beenbtviewer";
 
-    public static Logger logger = FMLLog.getLogger();
+    static Logger logger = FMLLog.getLogger();
 
-    public static KeyBinding keyCopyNBT;
-    public static KeyBinding keyToggleRawNBT;
-    public static KeyBinding keyToggleMutations;
-    public static KeyBinding keyShowPanel; // hold-to-show (default Alt), rebindable in Controls
+    static KeyBinding keyCopyNBT;
+    static KeyBinding keyToggleRawNBT;
+    static KeyBinding keyToggleMutations;
+    static KeyBinding keyShowPanel; // hold-to-show (default Alt), rebindable in Controls
 
     // Kept from preInit so runtime toggles (Mutation Hints) can be written back and survive restarts.
     private static Configuration config;
